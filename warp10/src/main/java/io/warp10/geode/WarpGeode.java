@@ -226,36 +226,23 @@ public class WarpGeode extends WarpDist implements Runnable {
     Handler cors = new CORSHandler();
     handlers.addHandler(cors);
     
-    StandaloneDirectoryClient sdc = null;
+    GeodeDirectoryClient sdc = null;
     StoreClient scc = null;
 
     if (inmemory) {
-      sdc = new StandaloneDirectoryClient(null, keystore);
-      
-      if ("true".equals(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_CHUNKED))) {
-        scc = new StandaloneChunkedMemoryStore(WarpDist.getProperties(), keystore);
-        ((StandaloneChunkedMemoryStore) scc).setDirectoryClient((StandaloneDirectoryClient) sdc);
-        ((StandaloneChunkedMemoryStore) scc).load();
-      } else {
-        scc = new StandaloneMemoryStore(keystore,
-            Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_DEPTH, Long.toString(60 * 60 * 1000 * Constants.TIME_UNITS_PER_MS))),
-            Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_HIGHWATERMARK, "100000")),
-            Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_LOWWATERMARK, "80000")));
-        ((StandaloneMemoryStore) scc).setDirectoryClient((StandaloneDirectoryClient) sdc);
-        if ("true".equals(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_EPHEMERAL))) {
-          ((StandaloneMemoryStore) scc).setEphemeral(true);
-        }        
-        ((StandaloneMemoryStore) scc).load();
+      sdc = new GeodeDirectoryClient(keystore);
+      scc = new GeodeMemoryStore(keystore,
+          Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_DEPTH, Long.toString(60 * 60 * 1000 * Constants.TIME_UNITS_PER_MS))),
+          Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_HIGHWATERMARK, "100000")),
+          Long.valueOf(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_LOWWATERMARK, "80000")));
+      ((GeodeMemoryStore) scc).setDirectoryClient(sdc);
+      if ("true".equals(WarpDist.getProperties().getProperty(Configuration.IN_MEMORY_EPHEMERAL))) {
+        ((GeodeMemoryStore) scc).setEphemeral(true);
       }
-    } else if (plasmabackend) {
-      sdc = new StandaloneDirectoryClient(null, keystore);
-      scc = new PlasmaStoreClient();
-    } else if (nullbackend) {
-      sdc = new NullDirectoryClient(keystore);
-      scc = new NullStoreClient();
+      ((GeodeMemoryStore) scc).load();
     }
         
-    StandaloneGeoDirectory geodir = new StandaloneGeoDirectory(keystore.clone(), scc, sdc, properties);
+    GeodeGeoDirectory geodir = new GeodeGeoDirectory(keystore.clone(), scc, sdc, properties);
     
     if (properties.containsKey(Configuration.RUNNER_ROOT)) {
       if (!properties.containsKey(Configuration.RUNNER_ENDPOINT)) {
@@ -294,7 +281,7 @@ public class WarpGeode extends WarpDist implements Runnable {
     setEgress(true);
 
     gzip = new GzipHandler();
-    gzip.setHandler(new StandaloneIngressHandler(keystore, sdc, scc));
+    gzip.setHandler(new GeodeIngressHandler(keystore, sdc, scc));
     gzip.setBufferSize(65536);
     gzip.setMinGzipSize(0);
     handlers.addHandler(gzip);
@@ -312,7 +299,7 @@ public class WarpGeode extends WarpDist implements Runnable {
     handlers.addHandler(gzip);
 
     gzip = new GzipHandler();
-    gzip.setHandler(new StandaloneDeleteHandler(keystore, sdc, scc));
+    gzip.setHandler(new GeodeIngressHandler(keystore, sdc, scc));
     gzip.setBufferSize(65536);
     gzip.setMinGzipSize(0);
     handlers.addHandler(gzip);
@@ -328,8 +315,8 @@ public class WarpGeode extends WarpDist implements Runnable {
     //handlers.addHandler(context);
     handlers.addHandler(plasmaHandler);
     
-    StandaloneStreamUpdateHandler streamUpdateHandler = new StandaloneStreamUpdateHandler(keystore, properties, sdc, scc);
-    handlers.addHandler(streamUpdateHandler);
+    //StandaloneStreamUpdateHandler streamUpdateHandler = new StandaloneStreamUpdateHandler(keystore, properties, sdc, scc);
+    //handlers.addHandler(streamUpdateHandler);
 
     EgressMobiusHandler mobiusHandler = new EgressMobiusHandler(scc, sdc, properties);
     handlers.addHandler(mobiusHandler);

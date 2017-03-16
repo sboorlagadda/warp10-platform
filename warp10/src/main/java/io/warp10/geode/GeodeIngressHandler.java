@@ -40,7 +40,6 @@ import io.warp10.crypto.SipHashInline;
 import io.warp10.quasar.token.thrift.data.WriteToken;
 import io.warp10.script.WarpScriptException;
 import io.warp10.sensision.Sensision;
-import io.warp10.standalone.StandaloneDirectoryClient;
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TException;
@@ -88,7 +87,7 @@ public class GeodeIngressHandler extends AbstractHandler {
 
   private final KeyStore keyStore;
   private final StoreClient storeClient;
-  private final StandaloneDirectoryClient directoryClient;
+  private final GeodeDirectoryClient directoryClient;
 
   private final byte[] classKey;
   private final byte[] labelsKey;
@@ -111,7 +110,7 @@ public class GeodeIngressHandler extends AbstractHandler {
 
   private final long maxValueSize;
 
-  public GeodeIngressHandler(KeyStore keystore, StandaloneDirectoryClient directoryClient, StoreClient storeClient) {
+  public GeodeIngressHandler(KeyStore keystore, GeodeDirectoryClient directoryClient, StoreClient storeClient) {
     this.keyStore = keystore;
     this.storeClient = storeClient;
     this.directoryClient = directoryClient;

@@ -32,23 +32,12 @@ import io.warp10.continuum.store.thrift.data.Metadata;
 import io.warp10.crypto.KeyStore;
 import io.warp10.crypto.SipHashInline;
 import io.warp10.sensision.Sensision;
-import org.apache.thrift.TDeserializer;
-import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.engines.AESWrapEngine;
-import org.bouncycastle.crypto.paddings.PKCS7Padding;
-import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,10 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Set;;
 import java.util.regex.Pattern;
 
 public class GeodeDirectoryClient implements DirectoryClient {
@@ -92,7 +78,7 @@ public class GeodeDirectoryClient implements DirectoryClient {
   private static final Map<BigInteger,Metadata> metadatasById = new MapMaker().concurrencyLevel(64).makeMap();
 
   public GeodeDirectoryClient(final KeyStore keystore) {
-    
+
     this.initNThreads = Integer.parseInt(WarpConfig.getProperties().getProperty(Configuration.DIRECTORY_INIT_NTHREADS, DIRECTORY_INIT_NTHREADS_DEFAULT));
 
     this.keystore = keystore;
@@ -103,145 +89,6 @@ public class GeodeDirectoryClient implements DirectoryClient {
     
     this.labelsKey = this.keystore.getKey(KeyStore.SIPHASH_LABELS);
     this.labelsLongs = SipHashInline.getKey(this.labelsKey);
-
-    byte[] stop = "N".getBytes(Charsets.US_ASCII);
-    
-    long count = 0;
-
-    Thread[] initThreads = new Thread[this.initNThreads];
-    final AtomicBoolean[] stopMarkers = new AtomicBoolean[this.initNThreads];
-    final LinkedBlockingQueue<Entry<byte[],byte[]>> resultQ = new LinkedBlockingQueue<Entry<byte[],byte[]>>(initThreads.length * 8192);
-
-    for (int i = 0; i < initThreads.length; i++) {
-      stopMarkers[i] = new AtomicBoolean(false);
-      final AtomicBoolean stopMe = stopMarkers[i];
-      initThreads[i] = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          
-          byte[] bytes = new byte[16];
-
-          AESWrapEngine engine = null;
-          PKCS7Padding padding = null;
-          
-          if (null != keystore.getKey(KeyStore.AES_LEVELDB_METADATA)) {
-            engine = new AESWrapEngine();
-            CipherParameters params = new KeyParameter(keystore.getKey(KeyStore.AES_LEVELDB_METADATA));
-            engine.init(false, params);
-
-            padding = new PKCS7Padding();
-          }
-          
-          TDeserializer deserializer = new TDeserializer(new TCompactProtocol.Factory());
-
-          while (!stopMe.get()) {
-            try {
-              
-              Entry<byte[],byte[]> result = resultQ.poll(100, TimeUnit.MILLISECONDS);
-              
-              if (null == result) {
-                continue;
-              }
-              
-              byte[] key = result.getKey();
-              byte[] value = result.getValue();
-              
-              //
-              // Unwrap
-              //
-              
-              byte[] unwrapped = null != engine ? engine.unwrap(value, 0, value.length) : value;
-              
-              //
-              // Unpad
-              //
-              
-              int padcount = null != padding ? padding.padCount(unwrapped) : 0;
-              byte[] unpadded = null != padding ? Arrays.copyOf(unwrapped, unwrapped.length - padcount) : unwrapped;
-              
-              //
-              // Deserialize
-              //
-
-              Metadata metadata = new Metadata();
-              deserializer.deserialize(metadata, unpadded);
-              
-              //
-              // Compute classId/labelsId and compare it to the values in the row key
-              //
-              
-              // 128BITS
-              long classId = GTSHelper.classId(classLongs, metadata.getName());
-              long labelsId = GTSHelper.labelsId(labelsLongs, metadata.getLabels());
-              
-              ByteBuffer bb = ByteBuffer.wrap(key).order(ByteOrder.BIG_ENDIAN);
-              bb.position(1);
-              long hbClassId = bb.getLong();
-              long hbLabelsId = bb.getLong();
-              
-              // If classId/labelsId are incoherent, skip metadata
-              if (classId != hbClassId || labelsId != hbLabelsId) {
-                // FIXME(hbs): LOG
-                System.err.println("Incoherent class/labels Id for " + metadata);
-                continue;
-              }
-
-              // 128BITS
-              metadata.setClassId(classId);
-              metadata.setLabelsId(labelsId);
-              
-              if (!metadata.isSetAttributes()) {
-                metadata.setAttributes(new HashMap<String,String>());
-              }
-              
-              //
-              // Internalize Strings
-              //
-              
-              GTSHelper.internalizeStrings(metadata);
-
-              synchronized(metadatas) {
-                if (!metadatas.containsKey(metadata.getName())) {
-                  metadatas.put(metadata.getName(), (Map) new MapMaker().concurrencyLevel(64).makeMap());
-                }                
-              }
-              
-              synchronized(metadatas.get(metadata.getName())) {
-                if (!metadatas.get(metadata.getName()).containsKey(labelsId)) {
-                  metadatas.get(metadata.getName()).put(labelsId, metadata);
-                  
-                  //
-                  // Store Metadata under 'id'
-                  //
-                  // 128BITS
-                  GTSHelper.fillGTSIds(bytes, 0, classId, labelsId);
-                  BigInteger id = new BigInteger(bytes);
-                  metadatasById.put(id, metadata);
-
-                  continue;
-                }
-              }
-              
-              // FIXME(hbs): LOG
-              System.err.println("Duplicate labelsId for classId " + classId + ": " + metadata);
-              continue;
-              
-            } catch (InvalidCipherTextException icte) {
-              throw new RuntimeException(icte);
-            } catch (TException te) {
-              throw new RuntimeException(te);
-            } catch (InterruptedException ie) {
-              
-            }
-            
-          }
-        }
-      });
-      
-      initThreads[i].setDaemon(true);
-      initThreads[i].setName("[Directory initializer #" + i + "]");
-      initThreads[i].start();
-    }
   }
   
   public List<Metadata> find(List<String> classExpr, List<Map<String,String>> labelsExpr) {
