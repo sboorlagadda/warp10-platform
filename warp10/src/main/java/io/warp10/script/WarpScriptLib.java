@@ -460,6 +460,7 @@ public class WarpScriptLib {
     functions.put("NDEBUGON", new NDEBUGON("NDEBUGON"));
     functions.put("DEBUGOFF", new DEBUGOFF("DEBUGOFF"));
     functions.put("LMAP", new LMAP("LMAP"));
+    functions.put("NONNULL", new NONNULL("NONNULL"));
     functions.put("LFLATMAP", new LFLATMAP("LFLATMAP"));
     functions.put("[]", new EMPTYLIST("[]"));
     functions.put(LIST_START, new MARK(LIST_START));
@@ -475,6 +476,8 @@ public class WarpScriptLib {
     functions.put("NOOP", new NOOP("NOOP"));
     functions.put("DOC", new DOC("DOC"));
     functions.put("DOCMODE", new DOCMODE("DOCMODE"));
+    functions.put("SECTION", new SECTION("SECTION"));
+    functions.put("GETSECTION", new GETSECTION("GETSECTION"));
     functions.put(SNAPSHOT, new SNAPSHOT(SNAPSHOT, false, false, true));
     functions.put(SNAPSHOTALL, new SNAPSHOT(SNAPSHOTALL, true, false, true));
     functions.put("SNAPSHOTTOMARK", new SNAPSHOT("SNAPSHOTTOMARK", false, true, true));

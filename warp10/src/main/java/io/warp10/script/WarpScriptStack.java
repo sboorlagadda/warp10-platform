@@ -65,6 +65,13 @@ public interface WarpScriptStack {
   public static final String SECURE_SCRIPT_START = "<S";
   public static final String SECURE_SCRIPT_END = "S>";
   
+  public static final String TOP_LEVEL_SECTION = "[TOP]";
+  
+  /**
+   * Name of current code section, null is unnamed
+   */
+  public static final String ATTRIBUTE_SECTION_NAME = "section.name";
+  
   /**
    * Flag indicating whether or not the stack is currently in documentation mode
    */
@@ -244,6 +251,8 @@ public interface WarpScriptStack {
      */
     private boolean secure = false;
     
+    private long fingerprint;
+    
     private ArrayList<Object> statements = new ArrayList<Object>();
     
     public String toString() {
@@ -295,6 +304,14 @@ public interface WarpScriptStack {
     
     public boolean isSecure() {
       return this.secure;
+    }
+    
+    public long getFingerprint() {
+      return this.fingerprint;
+    }
+    
+    public void setFingerprint(long fingerprint) {
+      this.fingerprint = fingerprint;
     }
   }
   

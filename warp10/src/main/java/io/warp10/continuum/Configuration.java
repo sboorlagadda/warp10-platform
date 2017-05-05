@@ -1361,6 +1361,21 @@ public class Configuration {
   public static final String DATALOG_FORWARDER_ENDPOINT_META = "datalog.forwarder.endpoint.meta";
   
   /**
+   * Set to 'true' to disable plasma
+   */
+  public static final String WARP_PLASMA_DISABLE = "warp.plasma.disable";
+
+  /**
+   * Set to 'true' to disable mobius
+   */
+  public static final String WARP_MOBIUS_DISABLE = "warp.mobius.disable";
+
+  /**
+   * Set to 'true' to disable stream updates
+   */
+  public static final String WARP_STREAMUPDATE_DISABLE = "warp.streamupdate.disable";
+
+  /**
    * Set to 'true' to indicate the instance will use memory only for storage. This type of instance is non persistent.
    */
   public static final String IN_MEMORY = "in.memory";
@@ -1805,12 +1820,20 @@ public class Configuration {
    */
   public static final String WARPSCRIPT_CALL_MAXCAPACITY = "warpscript.call.maxcapacity";
       
-  //
-  // Macro Repository
-  //
-  
+  /**
+   * Macro Repository root directory
+   */  
   public static final String REPOSITORY_DIRECTORY = "warpscript.repository.directory";
+  
+  /**
+   * Macro repository refresh interval (in ms)
+   */
   public static final String REPOSITORY_REFRESH = "warpscript.repository.refresh";
+
+  /**
+   * Should new macros be loaded on demand?
+   */
+  public static final String REPOSITORY_ONDEMAND = "warpscript.repository.ondemand";
 
   /**
    * Header containing the request UUID when calling the endpoint

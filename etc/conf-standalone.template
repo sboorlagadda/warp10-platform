@@ -60,6 +60,21 @@ warp.aes.metasets = @key:256:warp.aes.metasets@
 #warp.plasma.maxsubs
 
 //
+// Set to true to disable plasma
+//
+#warp.plasma.disable =
+
+//
+// Set to true to disable mobius
+//
+#warp.mobius.disable =
+
+//
+// Set to true to disable streaming updates
+//
+#warp.streamupdate.disable =
+
+//
 // This configuration parameter determines if undefining a function (via NULL 'XXX' DEF)
 // will unshadow the original statement thus making it available again or if it will replace
 // it with a function that will fail with a message saying the function is undefined.
@@ -126,6 +141,9 @@ warpscript.jars.fromclasspath = true
 //
 warpscript.repository.directory = ${standalone.home}/macros
 warpscript.repository.refresh = 60000
+
+// Set to true to enable on demand loading of macros not yet loaded.
+#warpscript.repository.ondemand = true
 
 //
 // Maximum levels of recursion in macro calls
@@ -696,7 +714,7 @@ runner.roles = standalone
 //
 // AES key for wrapping a runner nonce which can later be extracted using RUNNERNONCE
 //
-//runner.psk = hex:......
+//runner.psk = @key:256:runner.psk@
 
 //
 // Root directory under which scripts to run reside.
